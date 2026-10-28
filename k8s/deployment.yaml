@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pabloPortfolio
+  name: pabloportfolio
   labels:
-    app: pabloPortfolio
+    app: pabloportfolio
 spec:
   replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
-      app: pabloPortfolio
+      app: pabloportfolio
   template:
     metadata:
       labels:
-        app: pabloPortfolio
+        app: pabloportfolio
     spec:
       securityContext:
         runAsNonRoot: true
@@ -22,7 +22,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: pabloPortfolio
+        - name: pabloportfolio
           image: ghcr.io/pablogarpe/portfolio:latest
           imagePullPolicy: Always
           ports:
@@ -60,13 +60,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: portfolio
+  name: pabloportfolio
   labels:
-    app: portfolio
+    app: pabloportfolio
 spec:
   type: ClusterIP
   selector:
-    app: portfolio
+    app: pabloportfolio
   ports:
     - name: http
       port: 80
