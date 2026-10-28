@@ -1,0 +1,180 @@
+---
+import Base from '../layouts/Base.astro';
+import LangSwitcher from './LangSwitcher.astro';
+import Icon from './Icon.astro';
+import { tr, type Lang } from '../i18n/ui';
+import { useTranslations, localizePath, formatDate } from '../i18n/utils';
+import { profile, experience, projects, education, certifications, skills, languages, additional } from '../data/cv';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const jobs = experience.filter((j) => j.cv !== false);
+const works = projects.filter((p) => p.cv !== false);
+const range = (start?: string, end?: string) => {
+  const f = (d: string) => (d.length === 4 ? d : formatDate(d, lang));
+  if (start && end) return `${f(start)} – ${f(end)}`;
+  if (start) return `${f(start)} – ${t('job.present')}`;
+  return end ? f(end) : '';
+};
+const host = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+---
+<Base lang={lang} title={t('meta.cvTitle')} description={t('meta.cvDescription')}>
+  <div class="toolbar no-print">
+    <a href={localizePath('/', lang)}>← {t('cv.back')}</a>
+    <div class="tools">
+      <LangSwitcher lang={lang} />
+      <button class="btn" type="button" onclick="window.print()">{t('cv.print')}</button>
+    </div>
+  </div>
+
+  <article class="sheet">
+    <header class="cv-header">
+      <div>
+        <h1>{profile.name}</h1>
+        <p class="cv-role">{tr(profile.role, lang)}</p>
+      </div>
+      <ul class="contact">
+        <li><Icon name="pin" size={13} /> {profile.location}</li>
+        <li><Icon name="mail" size={13} /> <a href={`mailto:${profile.email}`}>{profile.email}</a></li>
+        <li><Icon name="phone" size={13} /> {profile.phone}</li>
+        <li><Icon name="web" size={13} /> <a href={profile.website}>{host(profile.website)}</a></li>
+        {profile.links.map((l) => (
+          <li><Icon name={l.icon ?? 'web'} size={13} /> <a href={l.url}>{l.label === 'LinkedIn' ? 'LinkedIn' : host(l.url)}</a></li>
+        ))}
+      </ul>
+    </header>
+
+    <section>
+      <h2>{t('section.profile')}</h2>
+      <p>{tr(profile.summary, lang)}</p>
+    </section>
+
+    <div class="cols">
+      <div class="main-col">
+        <section>
+          <h2>{t('section.experience')}</h2>
+          {jobs.map((j) => (
+            <div class="entry">
+              <div class="entry-head">
+                <strong>{tr(j.role, lang)}</strong>
+                <span class="date">{range(j.start, j.end)}</span>
+              </div>
+              <div class="sub">{j.company}{j.location && ` · ${j.location}`}</div>
+              <p>{tr(j.description, lang)}</p>
+            </div>
+          ))}
+        </section>
+
+        <section>
+          <h2>{t('section.projects')}</h2>
+          {works.map((p) => (
+            <div class="entry">
+              <div class="entry-head">
+                <strong>{tr(p.title, lang)}</strong>
+                {p.url && <a class="date" href={p.url}>{host(p.url)}</a>}
+              </div>
+              <p>{tr(p.description, lang)}</p>
+              <p class="tech">{p.tech.join(' · ')}</p>
+            </div>
+          ))}
+        </section>
+      </div>
+
+      <aside class="side-col">
+        <section>
+          <h2>{t('section.education')}</h2>
+          {education.map((e) => (
+            <div class="entry">
+              <strong>{tr(e.title, lang)}</strong>
+              <div class="sub">{e.center}</div>
+              <div class="date">{range(e.start, e.end)}</div>
+            </div>
+          ))}
+        </section>
+
+        <section>
+          <h2>{t('section.skills')}</h2>
+          {skills.map((g) => (
+            <div class="entry">
+              <div class="sub">{tr(g.name, lang)}</div>
+              <p>{g.items.join(', ')}</p>
+            </div>
+          ))}
+        </section>
+
+        <section>
+          <h2>{t('section.languages')}</h2>
+          <ul class="plain">
+            {languages.map((l) => <li><strong>{tr(l.name, lang)}</strong> — {tr(l.level, lang)}</li>)}
+          </ul>
+        </section>
+
+        <section>
+          <h2>{t('section.certifications')}</h2>
+          <ul class="plain">
+            {certifications.map((c) => <li>{tr(c.name, lang)} <span class="sub">· {c.issuer}{c.year && ` · ${c.year}`}</span></li>)}
+          </ul>
+        </section>
+
+        <section>
+          <h2>{t('section.additional')}</h2>
+          <ul class="plain">{additional.map((a) => <li>{tr(a, lang)}</li>)}</ul>
+        </section>
+      </aside>
+    </div>
+  </article>
+</Base>
+
+<style>
+  /* El CV se ve siempre en claro, como un papel, aunque la web esté en modo oscuro */
+  :global(body) { background: var(--surface); }
+  .toolbar {
+    width: min(210mm, calc(100% - 32px)); margin: 16px auto; display: flex; justify-content: space-between;
+    align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .tools { display: flex; gap: .75rem; align-items: center; }
+
+  .sheet {
+    --ink: #1a1a1f; --ink-muted: #5b5b66; --line: #e3e1ea; --cv-accent: #6d4aff;
+    width: 210mm; min-height: 297mm; margin: 0 auto 32px; padding: 14mm 15mm;
+    background: #fff; color: var(--ink); font-size: 9.6pt; line-height: 1.45;
+    box-shadow: 0 10px 40px rgb(0 0 0 / .12); border-radius: 4px; box-sizing: border-box;
+  }
+  .sheet a { color: inherit; }
+  .cv-header { display: flex; justify-content: space-between; gap: 1.5rem; padding-bottom: 5mm; border-bottom: 2px solid var(--cv-accent); }
+  h1 { font-size: 24pt; margin: 0; line-height: 1.05; color: var(--ink); }
+  .cv-role { margin: 2mm 0 0; color: var(--cv-accent); font-weight: 600; font-size: 11pt; }
+  .contact { list-style: none; padding: 0; margin: 0; display: grid; gap: 1mm; font-size: 8.6pt; color: var(--ink-muted); text-align: right; }
+  .contact li { display: flex; gap: 5px; align-items: center; justify-content: flex-end; }
+
+  h2 {
+    font-family: var(--font-display); font-size: 9pt; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--cv-accent); margin: 5mm 0 2mm; padding-bottom: 1mm; border-bottom: 1px solid var(--line);
+  }
+  section p { margin: .5mm 0 0; }
+  .cols { display: grid; grid-template-columns: 1fr 62mm; gap: 8mm; }
+  .entry { margin-bottom: 3mm; break-inside: avoid; }
+  .entry-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+  .date { color: var(--ink-muted); font-size: 8.4pt; white-space: nowrap; }
+  .sub { color: var(--ink-muted); font-size: 8.6pt; }
+  .tech { color: var(--ink-muted); font-size: 8.2pt; }
+  .plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 1.5mm; }
+
+  @media (max-width: 820px) {
+    .sheet { width: auto; min-height: 0; margin: 0 16px 24px; padding: 20px; }
+    .cols, .cv-header { grid-template-columns: 1fr; flex-direction: column; }
+    .contact, .contact li { text-align: left; justify-content: flex-start; }
+  }
+
+  @media print {
+    @page { size: A4; margin: 0; }
+    :global(body) { background: #fff; }
+    .no-print { display: none !important; }
+    .sheet { box-shadow: none; margin: 0; border-radius: 0; width: 210mm; min-height: auto; }
+    .cols { grid-template-columns: 1fr 62mm; }
+    .cv-header { flex-direction: row; }
+    .contact, .contact li { text-align: right; justify-content: flex-end; }
+  }
+</style>

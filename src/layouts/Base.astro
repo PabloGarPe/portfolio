@@ -1,0 +1,122 @@
+---
+import '../styles/global.css';
+import { getImage } from 'astro:assets';
+import { languages, tr, type Lang } from '../i18n/ui';
+import { useTranslations, localizePath, stripLang } from '../i18n/utils';
+import { profile, skills, education } from '../data/cv';
+
+interface Props {
+  lang: Lang;
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const { lang, title, description, noindex = false } = Astro.props;
+const t = useTranslations(lang);
+const pageTitle = title ?? t('meta.title');
+const pageDesc = description ?? t('meta.description');
+const basePath = stripLang(Astro.url.pathname);
+const site = Astro.site ?? new URL(profile.website);
+const canonical = new URL(Astro.url.pathname, site);
+const ogLocales: Record<Lang, string> = { es: 'es_ES', en: 'en_GB' };
+
+// JPEG para la previsualización en redes (algunas no aceptan WebP)
+const ogImage = await getImage({ src: profile.photo, width: 800, height: 800, format: 'jpeg', quality: 80 });
+const ogImageUrl = new URL(ogImage.src, site);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${site.origin}/#website`,
+      url: site.origin,
+      name: profile.name,
+      inLanguage: Object.keys(languages),
+    },
+    {
+      '@type': 'Person',
+      '@id': `${site.origin}/#person`,
+      name: profile.name,
+      jobTitle: tr(profile.role, lang),
+      url: site.origin,
+      image: ogImageUrl.href,
+      email: `mailto:${profile.email}`,
+      address: { '@type': 'PostalAddress', addressLocality: 'Avilés', addressRegion: 'Asturias', addressCountry: 'ES' },
+      alumniOf: education.map((e) => ({ '@type': 'EducationalOrganization', name: e.center })),
+      knowsAbout: skills.flatMap((g) => g.items),
+      sameAs: profile.links.map((l) => l.url),
+    },
+    {
+      '@type': 'ProfilePage',
+      '@id': `${canonical.href}#webpage`,
+      url: canonical.href,
+      name: pageTitle,
+      description: pageDesc,
+      inLanguage: lang,
+      isPartOf: { '@id': `${site.origin}/#website` },
+      mainEntity: { '@id': `${site.origin}/#person` },
+    },
+  ],
+};
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDesc} />
+    <meta name="author" content={profile.name} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111015" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    {!noindex && <link rel="canonical" href={canonical} />}
+    {!noindex && Object.keys(languages).map((l) => (
+      <link rel="alternate" hreflang={l} href={new URL(localizePath(basePath, l as Lang), site)} />
+    ))}
+    {!noindex && <link rel="alternate" hreflang="x-default" href={new URL(basePath, site)} />}
+
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content={profile.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDesc} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content={String(ogImage.attributes.width ?? 800)} />
+    <meta property="og:image:height" content={String(ogImage.attributes.height ?? 800)} />
+    <meta property="og:image:alt" content={t('meta.photoAlt')} />
+    <meta property="og:locale" content={ogLocales[lang]} />
+    {Object.keys(languages).filter((l) => l !== lang).map((l) => (
+      <meta property="og:locale:alternate" content={ogLocales[l as Lang]} />
+    ))}
+    <meta property="profile:first_name" content="Pablo" />
+    <meta property="profile:last_name" content="García Pernas" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDesc} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+    <script is:inline>
+      // Aplica el tema antes de pintar para evitar parpadeo
+      try {
+        const saved = localStorage.getItem('theme');
+        const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', dark);
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

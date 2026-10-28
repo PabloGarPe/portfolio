@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pablogarciapernas.eu/sitemap-index.xml

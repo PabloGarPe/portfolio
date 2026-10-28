@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base lang="es" title="404 · Página no encontrada" description="La página que buscas no existe." noindex>
+  <main class="container not-found">
+    <h1>404</h1>
+    <p>La página que buscas no existe. · This page doesn’t exist.</p>
+    <p><a class="btn" href="/">Ir al inicio</a> <a class="btn ghost" href="/en/">Go home</a></p>
+  </main>
+</Base>
+
+<style>
+  .not-found { min-height: 70vh; display: grid; place-content: center; text-align: center; gap: 1rem; }
+  .not-found h1 { font-size: 4rem; margin: 0; }
+</style>
